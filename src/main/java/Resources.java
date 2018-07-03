@@ -10,12 +10,14 @@ import java.util.StringTokenizer;
 public class Resources {
     private static ArrayList<String> places = new ArrayList<String>();
     private static ArrayList<Spot> spots = new ArrayList<Spot>();
-    private static String fileName = "document/spots.txt";
+    private static String distanceFileName = "document/spots.txt";
+    private static String descriptionFileName = "document/spotsDescription.txt";
     private static int[][] distances;
+    private static ArrayList<Description> descriptions = new ArrayList<Description>();
 
     static {
         try {
-            BufferedReader bufferedReader = new BufferedReader(new FileReader(new File(fileName)));
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(new File(distanceFileName)));
             String line = "";
             while ((line = bufferedReader.readLine()) != null) {
                 StringTokenizer stringTokenizer = new StringTokenizer(line, "——");
@@ -30,34 +32,94 @@ public class Resources {
                     places.add(secondPlace);
                 }
             }
-            distances = new int[places.size()][places.size()];
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    static {
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(new File(descriptionFileName)));
+            String line = "";
+            while ((line = bufferedReader.readLine()) != null) {
+                StringTokenizer stringTokenizer = new StringTokenizer(line," ");
+                String spotName = stringTokenizer.nextToken();
+                String spotDescription = stringTokenizer.nextToken();
+                int loveDegree = Integer.parseInt(stringTokenizer.nextToken());
+                boolean hasRestPlace = Boolean.parseBoolean(stringTokenizer.nextToken());
+                boolean hasToilet = Boolean.parseBoolean(stringTokenizer.nextToken());
+                descriptions.add(new Description(spotName,spotDescription,loveDegree,hasRestPlace,hasToilet));
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     private static boolean isExist(String name) {
-        for (String spot: places) {
-            if (name.equals(spot)) {
+        for (String place: places) {
+            if (name.equals(place)) {
                 return true;
             }
         }
         return false;
     }
 
-    private static void showSpots() {
+    public static void showSpots() {
         for (Spot spot: spots) {
             System.out.println(spot.getSourcePlace() + "->" + spot.getDestinationPlace() + "   distance:" + spot.getDistance());
         }
     }
 
-    private static void showPlaces() {
-        for (String place: places) {
-            System.out.println(place);
+    public static boolean deleteRoad(String firstPlace, String secondPlace) {
+        for (Spot spot: spots) {
+            if (spot.getSourcePlace().equals(firstPlace) && spot.getDestinationPlace().equals(secondPlace)) {
+                spots.remove(spot);
+                return true;
+            } else if (spot.getSourcePlace().equals(secondPlace) && spot.getDestinationPlace().equals(firstPlace)) {
+                spots.remove(spot);
+                return true;
+            }
         }
+        return false;
+    }
+
+    public static boolean addRoad(String firstPlace, String secondPlace, int distance) {
+        for (Spot spot: spots) {
+            if (spot.getSourcePlace().equals(firstPlace) && spot.getDestinationPlace().equals(secondPlace)) {
+                spot.setDistance(distance);
+                return true;
+            } else if (spot.getSourcePlace().equals(secondPlace) && spot.getDestinationPlace().equals(firstPlace)) {
+                spot.setDistance(distance);
+                return true;
+            }
+        }
+        if (isExist(firstPlace) && isExist(secondPlace)) {
+            spots.add(new Spot(firstPlace, secondPlace, distance));
+            return true;
+        }
+        return false;
+    }
+
+
+    public static boolean removePlace(String place) {
+        for (String p: places) {
+            if (p.equals(place)) {
+                places.remove(p);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static void showPlaces() {
+        for (String place: places) {
+            System.out.print(place + "  ");
+        }
+        System.out.println();
     }
 
     public static void printResult() {
+        distances = new int[places.size()][places.size()];
         System.out.print("          ");
         for (String place: places) {
             System.out.print(place + "        ");
@@ -107,6 +169,22 @@ public class Resources {
             }
         }
         return 32767;
+    }
+
+    public static ArrayList<Description> getDescriptions() {
+        return descriptions;
+    }
+
+    public static void setDescriptionFileName(String descriptionFileName) {
+        Resources.descriptionFileName = descriptionFileName;
+    }
+
+    public static ArrayList<String> getPlaces() {
+        return places;
+    }
+
+    public static ArrayList<Spot> getSpots() {
+        return spots;
     }
 
     @Test

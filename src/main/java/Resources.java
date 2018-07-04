@@ -42,13 +42,13 @@ public class Resources {
             BufferedReader bufferedReader = new BufferedReader(new FileReader(new File(descriptionFileName)));
             String line = "";
             while ((line = bufferedReader.readLine()) != null) {
-                StringTokenizer stringTokenizer = new StringTokenizer(line," ");
+                StringTokenizer stringTokenizer = new StringTokenizer(line, " ");
                 String spotName = stringTokenizer.nextToken();
                 String spotDescription = stringTokenizer.nextToken();
                 int loveDegree = Integer.parseInt(stringTokenizer.nextToken());
                 boolean hasRestPlace = Boolean.parseBoolean(stringTokenizer.nextToken());
                 boolean hasToilet = Boolean.parseBoolean(stringTokenizer.nextToken());
-                descriptions.add(new Description(spotName,spotDescription,loveDegree,hasRestPlace,hasToilet));
+                descriptions.add(new Description(spotName, spotDescription, loveDegree, hasRestPlace, hasToilet));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -127,7 +127,7 @@ public class Resources {
         System.out.println();
         for (int i = 0; i < places.size(); i++) {
             for (int j = 0; j < places.size(); j++) {
-                distances[i][j] = getTwoPlaceDistanc(places.get(i), places.get(j));
+                distances[i][j] = getTwoPlaceDistance(places.get(i), places.get(j));
             }
         }
         for (int i = 0; i < places.size(); i++) {
@@ -157,7 +157,7 @@ public class Resources {
         printResult();
     }
 
-    private static int getTwoPlaceDistanc(String sourcePlace, String destinationPlace) {
+    private static int getTwoPlaceDistance(String sourcePlace, String destinationPlace) {
         if (sourcePlace.equals(destinationPlace)) {
             return 0;
         }
@@ -175,12 +175,174 @@ public class Resources {
         return descriptions;
     }
 
+    private static void filterUndeterminedSpots(ArrayList<DistanceSpot> existSpots, ArrayList<DistanceSpot> undeterminedSpots) {
+        for (int i = 0; i < undeterminedSpots.size(); i++) {
+            for (int j = 0; j < existSpots.size(); j++) {
+                if (undeterminedSpots.get(i).getName().equals(existSpots.get(j).getName())) {
+                    undeterminedSpots.remove(undeterminedSpots.get(i));
+                    break;
+                }
+            }
+        }
+    }
+
+    public static void getShortestDistance(String spot1, String spot2) {
+
+        ArrayList<DistanceSpot> distanceSpots = new ArrayList<DistanceSpot>();//已选择的节点集合
+        ArrayList<String> pplaces = new ArrayList<String>();
+        ArrayList<DistanceSpot> undeterminedSpots = new ArrayList<DistanceSpot>();//待选择的节点集合
+        ArrayList<String> allPlaces = getDuplicatePlaces();//所有的节点集合
+
+        //System.out.println("初始的时候");
+        //System.out.println("allPlaces.size():" + allPlaces.size());
+        //System.out.println("distanceSpots.size():" + distanceSpots.size());
+
+        if (!isExist(spot1) || !isExist(spot2)) {
+            System.out.println("至少有一个景点不存在");
+            return;
+        } else {
+            //Core start
+            DistanceSpot currentDistanceSpot, previousDistanceSpot;
+            currentDistanceSpot = previousDistanceSpot = new DistanceSpot(null, 0, spot1);
+            distanceSpots.add(currentDistanceSpot);
+            allPlaces.remove(spot1);
+            System.out.println(spot1);
+            //System.out.println("allPlaces.size():" + allPlaces.size());
+            //System.out.println("distanceSpots.size():" + distanceSpots.size());
+            //int count = 0;
+
+            while (true) {//Search road start
+                //System.out.println(count++);
+                boolean isAchieveable = false;
+                for (DistanceSpot distanceSpot: distanceSpots) {//遍历已选择节点的集合
+                    for (String place: allPlaces) {
+                        filterUndeterminedSpots(distanceSpots, undeterminedSpots);
+                        boolean isSelected = false;
+                        for (DistanceSpot distanceSpot2: distanceSpots) {
+                            if (distanceSpot2.getName().equals(place)) {
+                                isSelected = true;
+                            }
+                        }
+                        if (isSelected) {
+                            continue;
+                        }
+
+                        if (getTwoPlaceDistance(distanceSpot.getName(), place) < 32767) {//Two place is
+                            for (DistanceSpot undeterminedDistanceSpot: undeterminedSpots) {
+                                if (undeterminedDistanceSpot.getName().equals(place)) {
+                                    if ((getTwoPlaceDistance(distanceSpot.getName(), place) + distanceSpot.getDistanceSum()) < undeterminedDistanceSpot.getDistanceSum()) {
+                                        undeterminedDistanceSpot.setPreviousDistanceSpot(distanceSpot);
+                                        undeterminedDistanceSpot.setDistanceSum((getTwoPlaceDistance(distanceSpot.getName(), place) + distanceSpot.getDistanceSum()));
+                                    }
+                                    break;
+                                }
+                            }
+                            undeterminedSpots.add(new DistanceSpot(distanceSpot, (getTwoPlaceDistance(distanceSpot.getName(), place) + distanceSpot.getDistanceSum()), place));
+                        }
+                        isAchieveable = true;
+                    }
+                    if (!isAchieveable) {
+                        System.out.println("两景点之间不可到达");
+                        return;
+                    }
+                }
+                String nextSpot = "";
+                int shortestDistance = 32767;
+                for (DistanceSpot undeterminedSpot: undeterminedSpots) {
+                    if (undeterminedSpot.getDistanceSum() < shortestDistance) {
+                        shortestDistance = undeterminedSpot.getDistanceSum();
+                        nextSpot = undeterminedSpot.getName();
+                    }
+                }
+                //DistanceSpot tempDistanceSpot = currentDistanceSpot;
+
+                pplaces.add(nextSpot);
+
+
+
+//                System.out.println("allPlaces before remove size" + allPlaces.size());
+                String deleteObject = null;
+                for (int i = 0; i < allPlaces.size(); i++) {
+                    if (allPlaces.get(i).equals(nextSpot)) {
+//                        System.out.println("找到要删除的景点");
+                        deleteObject = allPlaces.get(i);
+                        break;
+                    }
+                }
+                allPlaces.remove(deleteObject);
+//                System.out.println("allPlaces after remove size" + allPlaces.size());
+
+//                System.out.println("undeterminedSpots before remove size" + undeterminedSpots.size());
+                DistanceSpot deleteDistanceObject = null;
+                for (int i = 0; i < undeterminedSpots.size(); i++) {
+                    if (undeterminedSpots.get(i).getName().equals(nextSpot)) {
+//                        System.out.println("找到要删除的景点");
+                        deleteDistanceObject = undeterminedSpots.get(i);
+                        break;
+                    }
+                }
+                undeterminedSpots.remove(deleteDistanceObject);
+//                System.out.println("undeterminedSpots after remove size" + undeterminedSpots.size());
+
+                currentDistanceSpot = deleteDistanceObject;
+                //previousDistanceSpot = tempDistanceSpot;
+                boolean isExist = false;
+                for (DistanceSpot distanceSpot: distanceSpots) {
+                    if (distanceSpot.getName().equals(nextSpot)) {
+                        isExist = true;
+                    }
+                }
+                if (!isExist) {
+                    distanceSpots.add(currentDistanceSpot);
+                }
+
+                System.out.println(nextSpot);
+//                System.out.println("allPlaces.size():" + allPlaces.size());
+//                System.out.println("distanceSpots.size():" + distanceSpots.size());
+
+                if (nextSpot.equals(spot2)) {
+                    //DistanceSpot distanceSpot ;
+                    //for(DistanceSpot distanceSpot1:)
+                    System.out.println("寻路到达终点");
+                    System.out.println("共需要走的路程为:" + deleteDistanceObject.getDistanceSum());
+                    System.out.println("所需要经过的景点包括:");
+                    ArrayList<String> spots = new ArrayList<String>();
+                    while (true) {
+                        spots.add(deleteDistanceObject.getName());
+                        if (deleteDistanceObject.getPreviousDistanceSpot() == null) {
+                            break;
+                        }
+                        deleteDistanceObject = deleteDistanceObject.getPreviousDistanceSpot();
+                    }
+                    for (int i = spots.size() - 1; i >= 0; i--) {
+                        if (i == 0) {
+                            System.out.println(spots.get(i));
+                        } else {
+                            System.out.print(spots.get(i) + "-->");
+                        }
+                    }
+                    return;
+                }
+            }//search road end
+
+            //Core end
+        }
+    }
+
     public static void setDescriptionFileName(String descriptionFileName) {
         Resources.descriptionFileName = descriptionFileName;
     }
 
     public static ArrayList<String> getPlaces() {
         return places;
+    }
+
+    public static ArrayList<String> getDuplicatePlaces() {
+        ArrayList<String> arrayList = new ArrayList<String>();
+        for (String place: places) {
+            arrayList.add(place);
+        }
+        return arrayList;
     }
 
     public static ArrayList<Spot> getSpots() {

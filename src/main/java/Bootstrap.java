@@ -1,9 +1,4 @@
-import sun.security.krb5.internal.crypto.Des;
-
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -12,6 +7,16 @@ import java.util.Scanner;
 public class Bootstrap {
     public static Scanner scanner = new Scanner(System.in);
     public static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    public static PrintWriter printWriter = null;
+
+    static {
+        try {
+            printWriter = new PrintWriter(new FileWriter(new File("document/log.txt"), true));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     public static void main(String[] args) {
         while (true) {
@@ -30,8 +35,30 @@ public class Bootstrap {
             } else if (input.equals("3")) {
                 sortSpot();
             } else if (input.equals("4")) {
-
+                System.out.println("请输入第一个景点的名称");
+                String spot1 = scanner.nextLine();
+                System.out.println("请输入第二个景点的名称");
+                String spot2 = scanner.nextLine();
+                Resources.getShortestDistance(spot1, spot2);
+            } else if (input.equals("6")) {
+                BufferedReader bufferedReader = null;
+                try {
+                    bufferedReader = new BufferedReader(new FileReader(new File("document/log.txt")));
+                    String line = "";
+                    while ((line = bufferedReader.readLine()) != null) {
+                        System.out.println(line);
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        bufferedReader.close();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
             } else if (input.equals("0")) {
+                closeResource();
                 return;
             }
         }
@@ -50,15 +77,15 @@ public class Bootstrap {
                     count++;
                     if ((j + m) < 10) {
                         if (description.getSpotName().length() == 2) {
-                            System.out.println(j + m + ".  " + "            " + description.getSpotName() + "   " + "           "+description.getSpotDescription() + "         " + description.getLoveDegree() + "                   " + description.hasRestPlace() + "                          " + description.hasToilet());
+                            System.out.println(j + m + ".  " + "            " + description.getSpotName() + "   " + "           " + description.getSpotDescription() + "         " + description.getLoveDegree() + "                   " + description.hasRestPlace() + "                          " + description.hasToilet());
                         } else if (description.getSpotName().length() == 3) {
-                            System.out.println(j + m + ".  " + "            " + description.getSpotName() + " " + "           "+description.getSpotDescription() + "         " + description.getLoveDegree() + "                    " + description.hasRestPlace() + "                          " + description.hasToilet());
+                            System.out.println(j + m + ".  " + "            " + description.getSpotName() + " " + "           " + description.getSpotDescription() + "         " + description.getLoveDegree() + "                    " + description.hasRestPlace() + "                          " + description.hasToilet());
                         }
                     } else {
                         if (description.getSpotName().length() == 2) {
-                            System.out.println(j + m + ". " + "            " + description.getSpotName() + "   " +"           "+ description.getSpotDescription() + "              " + description.getLoveDegree() + "                     " + description.hasRestPlace() + "                     " + description.hasToilet());
+                            System.out.println(j + m + ". " + "            " + description.getSpotName() + "   " + "           " + description.getSpotDescription() + "              " + description.getLoveDegree() + "                     " + description.hasRestPlace() + "                     " + description.hasToilet());
                         } else if (description.getSpotName().length() == 3) {
-                            System.out.println(j + m + ". " + "            " + description.getSpotName() + " " +"           "+ description.getSpotDescription() + "         " + description.getLoveDegree() + "                    " + description.hasRestPlace() + "                          " + description.hasToilet());
+                            System.out.println(j + m + ". " + "            " + description.getSpotName() + " " + "           " + description.getSpotDescription() + "         " + description.getLoveDegree() + "                    " + description.hasRestPlace() + "                          " + description.hasToilet());
                         }
                     }
                 }
@@ -102,14 +129,16 @@ public class Bootstrap {
 
     private static void showManagerInterface() {
         while (true) {
-            System.out.println("1.插入一个景点");
-            System.out.println("2.删除一个景点");
-            System.out.println("3.插入一条路");
-            System.out.println("4.删除一条路");
-            System.out.println("5.发布通知");
-            System.out.println("6.查看现在所有的景点(名称)");
-            System.out.println("7.查看现在所有的景点(简略)");
-            System.out.println("8.查看现在所有的景点(详细)");
+            System.out.println("1. 插入一个景点");
+            System.out.println("2. 删除一个景点");
+            System.out.println("3. 插入一条路");
+            System.out.println("4. 删除一条路");
+            System.out.println("5. 发布通知");
+            System.out.println("6. 查看现在所有的景点(名称)");
+            System.out.println("7. 查看现在所有的景点(简略)");
+            System.out.println("8. 查看现在所有的景点(详细)");
+            System.out.println("9. 查看两个景点之间的最短距离与最短路线");
+            System.out.println("10.管理车辆进出");
             System.out.println("0.退出");
             String input = scanner.nextLine();
             if (input.equals("1")) {
@@ -167,9 +196,48 @@ public class Bootstrap {
                 Resources.showSpots();
             } else if (input.equals("8")) {
                 Resources.printResult();
+            } else if (input.equals("9")) {
+                System.out.println("请输入第一个景点的名称");
+                String spot1 = scanner.nextLine();
+                System.out.println("请输入第二个景点的名称");
+                String spot2 = scanner.nextLine();
+                Resources.getShortestDistance(spot1, spot2);
+            } else if (input.equals("10")) {
+                while (true) {
+                    System.out.println("请输入A(车辆进停车场),D(车辆出停车场),N(查看停车场的车辆数目),CP(查看停车场内的汽车),CQ(查看队列中的汽车),E(退出停车场管理程序)");
+                    String choice = scanner.nextLine();
+                    if (choice.equalsIgnoreCase("A")) {
+                        System.out.println("请输如刚到的汽车的车牌号码");
+                        String carNumber = scanner.nextLine();
+                        Car car = new Car(carNumber, new Date());
+                        Parking.parkingLot.addCar(car);
+                        printWriter.println("车牌号为" + car.getCarNumber() + "的车在" + simpleDateFormat.format(car.getArrive_date()) + "时间进入了停车场");
+                        printWriter.flush();
+                    } else if (choice.equalsIgnoreCase("D")) {
+                        System.out.println("请输入要离开的汽车的车牌号码");
+                        String carNumber = scanner.nextLine();
+                        Parking.parkingLot.remove(carNumber);
+                        printWriter.println("车牌号为" + carNumber + "的车在" + simpleDateFormat.format(new Date()) + "时间离开了停车场");
+                        printWriter.flush();
+                    } else if (choice.equalsIgnoreCase("N")) {
+                        System.out.println("当前停车场内车辆数目为" + Parking.parkingLot.getSize());
+                        printWriter.println("在" + simpleDateFormat.format(new Date()) + "时，停车场内的汽车数量为" + Parking.parkingLot.getSize());
+                        printWriter.flush();
+                    } else if (choice.equalsIgnoreCase("CP")) {
+                        Parking.parkingLot.showCarsOrder();
+                    } else if (choice.equalsIgnoreCase("CQ")) {
+                        Parking.waitingQueue.showCarsOrder();
+                    } else if (choice.equalsIgnoreCase("E")) {
+                        return;
+                    }
+                }
             } else if (input.equals("0")) {
                 return;
             }
         }
+    }
+
+    public static void closeResource() {
+        printWriter.close();
     }
 }

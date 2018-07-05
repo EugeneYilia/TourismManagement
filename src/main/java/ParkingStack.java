@@ -14,6 +14,9 @@ public class ParkingStack {
         if (cars.size() <= size) {
             cars.add(car);
             System.out.println("车辆" + car.getCarNumber() + "成功进入停车场");
+            if (cars.size() == this.size) {
+                System.out.println("最后一辆车" + car.getCarNumber() + "驶入后，停车场已满");
+            }
         } else {
             Parking.waitingQueue.addCar(car);
             System.out.println("停车场已满，车辆" + car.getCarNumber() + "进入等待队列");
@@ -49,6 +52,11 @@ public class ParkingStack {
             }
             if (isFound) {
                 System.out.println("汽车" + car.getCarNumber() + "成功从停车场开出");
+                if (cars.size() == this.size - 1) {//刚从满的状态恢复到还剩一个空车位，此时从等待队列中将一个汽车移入(如果有汽车在等待队列中的话)
+                    if (Parking.waitingQueue.getSize() != 0) {
+                        cars.add(Parking.waitingQueue.removeCar());
+                    }
+                }
             }
         } else {
             System.out.println("在停车场中没有找到对应车牌号" + car.getCarNumber() + "的汽车");

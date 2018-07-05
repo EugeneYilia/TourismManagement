@@ -1,7 +1,7 @@
-import java.util.ArrayList;
+import java.util.LinkedList;
 
 public class WaitingQueue {
-    public ArrayList<Car> cars = new ArrayList<Car>();
+    public LinkedList<Car> cars = new LinkedList<Car>();
 
     public WaitingQueue() {
     }
@@ -10,12 +10,16 @@ public class WaitingQueue {
         cars.add(car);
     }
 
-    public void removeCar() {
+    public Car removeCar() {
+        Car car = null;
         if (cars.size() != 0) {
+            car = cars.get(0);
+            System.out.println("第一辆车" + cars.get(0).getCarNumber() + "准备移出");
             cars.remove(0);
-            System.out.println("第一辆车准备移出");
+            return car;
         } else {
             System.out.println("车道中没有汽车");
+            return null;
         }
     }
 

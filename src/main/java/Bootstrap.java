@@ -1,9 +1,9 @@
 import java.io.*;
-import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Scanner;
+import java.util.StringTokenizer;
 
 public class Bootstrap {
     public static Scanner scanner = new Scanner(System.in);
@@ -19,14 +19,15 @@ public class Bootstrap {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) {//自动从文件读取，创建景区景点分布图
         while (true) {
             System.out.println("1.管理员登陆");
             System.out.println("2.景点查找");
             System.out.println("3.景点排序");
             System.out.println("4.两景点之间的最短距离和路径");//路径就是途中会经过哪些景点
-            System.out.println("5.输出导游路线图");
+            System.out.println("5.输出导游路线图(最短哈密尔顿回路)");
             System.out.println("6.输出车辆的进出信息");
+            System.out.println("7.输出景区景点分布图");
             System.out.println("0.退出");
             String input = scanner.nextLine();
             if (input.equals("1")) {
@@ -60,6 +61,8 @@ public class Bootstrap {
                         e.printStackTrace();
                     }
                 }
+            } else if (input.equals("7")) {
+                Resources.printResult();
             } else if (input.equals("0")) {
                 closeResource();
                 return;
@@ -96,17 +99,27 @@ public class Bootstrap {
                     }
                     if (Resources.getTwoPlaceDistance(vertex.getSpotName(), place) < 32767) {
                         if (Resources.record.contains(" " + vertex.getSpotName())) {
-                            if (!Resources.record.contains(place)) {
+                            Resources.record = Resources.record.replaceAll(" " + vertex.getSpotName(), " " + place + "-" + vertex.getSpotName());
+                            /*if (!Resources.record.contains(place)) {
                                 Resources.record = Resources.record.replaceAll(" " + vertex.getSpotName(), " " + place + "-" + vertex.getSpotName());
                             } else {
+                                if (Resources.record.contains(" " + place)) {
 
-                            }
+                                } else if (Resources.record.contains(place + " ")) {
+
+                                }
+                            }*/
                         } else if (Resources.record.contains(vertex.getSpotName() + " ")) {
-                            if (!Resources.record.contains(place)) {
+                            Resources.record = Resources.record.replaceAll(vertex.getSpotName() + " ", vertex.getSpotName() + "-" + place + " ");
+                            /*if (!Resources.record.contains(place)) {
                                 Resources.record = Resources.record.replaceAll(vertex.getSpotName() + " ", vertex.getSpotName() + "-" + place + " ");
                             } else {
+                                if (Resources.record.contains(" " + place)) {
 
-                            }
+                                } else if (Resources.record.contains(place + " ")) {
+
+                                }
+                            }*/
                         }
                         System.out.println("与" + vertex.getSpotName() + "相连的有" + place);
                         boolean isExistInAllPlaces = false;
@@ -151,6 +164,357 @@ public class Bootstrap {
         System.out.println();*/
 
         System.out.println(Resources.record);
+        Resources.record = combineSpots(Resources.record);
+
+        System.out.println(Resources.record);
+        System.out.println("还未加入选择集合中的元素");
+        for (String leftPlace: allPlaces) {
+            System.out.print(leftPlace + "        ");
+        }
+        System.out.println();
+        finalStepToGenerateRoute(allPlaces);
+    }
+
+    public static String finalStepToGenerateRoute(ArrayList<String> leftPlaces) {//滤掉还需要连接一个边的且只有一个边可供其相连
+        //leftPlaces中每一个景点的权重为2，还可以连接两个边
+        //Resources.record中路线的边缘节点权重为1，还可以连接一个边
+        String initialRecord = Resources.record;
+        System.out.println("开始过滤");
+        //int leftPlacesSize = leftPlaces.size();
+        String finalRoute = "";
+        StringTokenizer stringTokenizer = new StringTokenizer(Resources.record, " ");
+        ArrayList<Point> leftSpots = new ArrayList<Point>();
+        while (stringTokenizer.hasMoreTokens()) {
+            StringTokenizer edgeSpots = new StringTokenizer(stringTokenizer.nextToken(), "-");
+            int number = edgeSpots.countTokens();
+            for (int i = 0; i < number; i++) {
+                String spotName = edgeSpots.nextToken();
+                if (i == 0) {
+                    leftSpots.add(new Point(spotName, 1));
+                } else if (i == (number - 1)) {
+                    leftSpots.add(new Point(spotName, 1));
+                }
+            }
+        }
+        for (String place: leftPlaces) {
+            leftSpots.add(new Point(place, 2));
+        }
+        int leftSpotsSize = leftSpots.size();
+
+        ArrayList<Vertex> vertexes = new ArrayList<Vertex>();
+        System.out.println("理论上还可连接的边的数目");
+        for (Point point: leftSpots) {
+            System.out.println(point.getSpotName() + "  " + point.getEdgeNumber());
+            vertexes.add(new Vertex(point.getSpotName(), 0));
+        }
+
+        for (Point point1: leftSpots) {
+            for (Point point2: leftSpots) {
+                if (point1.getSpotName().equals(point2.getSpotName())) {
+                    continue;
+                }
+                if (Resources.getTwoPlaceDistance(point1.getSpotName(), point2.getSpotName()) < 32767) {
+                    for (Vertex vertex: vertexes) {
+                        if (vertex.getSpotName().equals(point1.getSpotName())) {
+                            if (!Resources.record.contains(point1.getSpotName() + "-" + point2.getSpotName()) && !Resources.record.contains(point2.getSpotName() + "-" + point1.getSpotName())) {
+                                vertex.setDegree((vertex.getDegree() + 1));
+                                break;
+                            } else {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        System.out.println("实际还有可与其连接边的数目");
+        for (Vertex vertex: vertexes) {
+            System.out.println(vertex.getSpotName() + "  " + vertex.getDegree());
+        }
+
+        int count = 0;
+        String spotName = "";
+        boolean isFound = false;
+        for (Vertex vertex: vertexes) {//实际
+            for (Point point: leftSpots) {//理论
+                if (point.getSpotName().equals(vertex.getSpotName())) {
+                    if (point.getEdgeNumber() == 1 && point.getEdgeNumber() == vertex.getDegree()) {
+                        spotName = point.getSpotName();
+                        count++;
+                        isFound = true;
+                        break;
+                    } /*else if(point.getEdgeNumber() == 2 && point.getEdgeNumber() == vertex.getDegree()) {
+                        spotName = point.getSpotName();
+                        count++;
+                        break;
+                    }*/
+                }
+            }
+        }
+
+        if (!isFound) {
+            for (Vertex vertex: vertexes) {//实际
+                for (Point point: leftSpots) {//理论
+                    if (point.getSpotName().equals(vertex.getSpotName())) {
+                    /*if (point.getEdgeNumber() == 1 && point.getEdgeNumber() == vertex.getDegree()) {
+                        spotName = point.getSpotName();
+                        count++;
+                        break;
+                    } else*/
+                        if (point.getEdgeNumber() == 2 && point.getEdgeNumber() == vertex.getDegree()) {
+                            spotName = point.getSpotName();
+                            count++;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        String destinationSpot = "";
+        for (Point point2: leftSpots) {
+            if (point2.getSpotName().equals(spotName)) {
+                continue;
+            }
+            if (Resources.getTwoPlaceDistance(spotName, point2.getSpotName()) < 32767 && !Resources.record.contains(spotName + "-" + point2.getSpotName()) && !Resources.record.contains(point2.getSpotName() + "-" + spotName)) {
+                destinationSpot = point2.getSpotName();
+            }
+        }
+        if (spotName.equals("")) {
+            return Resources.record;
+        }
+        System.out.println(spotName + "可连接到" + destinationSpot + "上面");
+        if (Resources.record.contains(destinationSpot)) {
+           /* if (Resources.record.contains(spotName)) {//同时具有spotName和destinationSpot并且要将这个景点连接起来，也就是意味着这是哈密尔顿回路的最后一步连接操作
+                StringTokenizer finalTokenizer = new StringTokenizer(Resources.record, "-");
+                String firstSpot = finalTokenizer.nextToken();
+                //Resources.record = Resources.record.substring(0, Resources.record.length() - 1);
+                Resources.record += "-" + firstSpot;
+                System.out.println("最终生成的哈密尔顿回路是    " + Resources.record);
+                return Resources.record;
+            }*/
+            if (Resources.record.contains(" " + destinationSpot)) {
+                Resources.record = Resources.record.replaceAll(" " + destinationSpot, " " + spotName + "-" + destinationSpot);
+            } else if (Resources.record.contains(destinationSpot + " ")) {
+                Resources.record = Resources.record.replaceAll(destinationSpot + " ", destinationSpot + "-" + spotName + " ");
+            }
+            boolean isExist = false;
+            for (String place: leftPlaces) {
+                if (place.equals(destinationSpot)) {
+                    isExist = true;
+                    break;
+                }
+            }
+            if (isExist) {
+                leftPlaces.remove(destinationSpot);
+            }
+
+            boolean spotNameIsExist = false;
+            for (String place: leftPlaces) {
+                if (place.equals(spotName)) {
+                    spotNameIsExist = true;
+                    break;
+                }
+            }
+            if (spotNameIsExist) {
+                leftPlaces.remove(spotName);
+            }
+        } else {
+            if (Resources.record.contains(" " + spotName)) {
+                Resources.record = Resources.record.replaceAll(" " + spotName, " " + destinationSpot + "-" + spotName);
+            } else if (Resources.record.contains(spotName + " ")) {
+                Resources.record = Resources.record.replaceAll(spotName + " ", spotName + "-" + destinationSpot + " ");
+            } else if (!Resources.record.contains(spotName)) {//spotName和destinationSpot都不包含
+                Resources.record += " " + spotName + "-" + destinationSpot;
+            }
+            boolean isExist = false;
+            for (String place: leftPlaces) {
+                if (place.equals(destinationSpot)) {
+                    isExist = true;
+                    break;
+                }
+            }
+            if (isExist) {
+                leftPlaces.remove(destinationSpot);
+            }
+
+            boolean spotNameIsExist = false;
+            for (String place: leftPlaces) {
+                if (place.equals(spotName)) {
+                    spotNameIsExist = true;
+                    break;
+                }
+            }
+            if (spotNameIsExist) {
+                leftPlaces.remove(spotName);
+            }
+        }
+        System.out.println(Resources.record);
+        Resources.record = combineSpots(Resources.record);
+        System.out.println(Resources.record);
+        finalRoute = Resources.record;
+
+
+        for (Point point1: leftSpots) {
+            if (point1.getSpotName().equals(spotName)) {
+                point1.setEdgeNumber((point1.getEdgeNumber() - 1));
+                if (point1.getEdgeNumber() == 0) {
+                    Point point = null;
+                    for (Point point3: leftSpots) {
+                        if (point3.getSpotName().equals(spotName)) {
+                            point = point3;
+                            break;
+                        }
+                    }
+                    leftSpots.remove(point);
+                    System.out.println("成功移除节点" + point.getSpotName());
+                    break;
+                }
+            }
+        }
+
+        //System.out.println(destinationSpot);
+        for (Point point1: leftSpots) {
+            if (point1.getSpotName().equals(destinationSpot)) {
+                point1.setEdgeNumber((point1.getEdgeNumber() - 1));
+                if (point1.getEdgeNumber() == 0) {
+                    Point point = null;
+                    for (Point point3: leftSpots) {
+                        if (point3.getSpotName().equals(destinationSpot)) {
+                            point = point3;
+                            break;
+                        }
+                    }
+                    leftSpots.remove(point);
+                    System.out.println("成功移除节点" + point.getSpotName());
+                    break;
+                }
+            }
+        }
+        System.out.println("可再次筛掉的景点的数目为" + (leftSpotsSize - leftSpots.size()));
+        System.out.println("剩余节点数目为" + leftSpots.size());
+
+//        if (leftSpots.size() == leftSpotsSize) {
+//        if (initialRecord.equals(Resources.record)) {
+        if (leftSpots.size() == 0) {
+            Resources.record = Resources.record.substring(0, Resources.record.length() - 1);
+            StringTokenizer finalTokenizer = new StringTokenizer(Resources.record, "-");
+            String firstSpot = finalTokenizer.nextToken();
+            //Resources.record = Resources.record.substring(0, Resources.record.length() - 1);
+            Resources.record += "-" + firstSpot;
+            System.out.println("最终生成的哈密尔顿回路是    " + "Start->" + Resources.record + "->End");
+            return finalRoute;
+        } else {
+            finalStepToGenerateRoute(leftPlaces);
+            return finalRoute;
+        }
+
+    }
+
+    public static String combineSpots(String spots) {
+        String returnString = "";
+        StringTokenizer stringTokenizer = new StringTokenizer(spots, " ");
+        int segmentNumber = stringTokenizer.countTokens();
+        ArrayList<String> segments[] = new ArrayList[segmentNumber];
+        for (int i = 0; i < segmentNumber; i++) {
+            segments[i] = new ArrayList<String>();
+        }
+        int count = 0;
+        while (stringTokenizer.hasMoreTokens()) {
+            String line = stringTokenizer.nextToken();
+            System.out.println(line);
+            StringTokenizer segmentTokenizer = new StringTokenizer(line, "-");
+            while (segmentTokenizer.hasMoreTokens()) {
+                segments[count].add(segmentTokenizer.nextToken());
+            }
+            count++;
+        }
+        for (int i = 0; i < segmentNumber; i++) {
+            for (int j = 0; j < segmentNumber; j++) {
+                if (i == j) {
+                    continue;
+                }
+                if (segments[i].size() == 0 || segments[j].size() == 0) {
+                    continue;
+                }
+                if (segments[i].get(0).equals(segments[j].get(0))) {
+                    ArrayList<String> newList = new ArrayList<String>();
+                    for (int m = segments[i].size() - 1; m >= 0; m--) {
+                        newList.add(segments[i].get(m));
+                    }
+                    for (int n = 1; n < segments[j].size(); n++) {
+                        newList.add(segments[j].get(n));
+                    }
+                    if (j > i) {
+                        segments[j] = newList;
+                        segments[i] = new ArrayList<String>();
+                    } else {
+                        segments[i] = newList;
+                        segments[j] = new ArrayList<String>();
+                    }
+                } else if (segments[i].get(0).equals(segments[j].get(segments[j].size() - 1))) {
+                    ArrayList<String> newList = new ArrayList<String>();
+                    for (int n = 0; n < segments[j].size(); n++) {
+                        newList.add(segments[j].get(n));
+                    }
+                    for (int m = 1; m < segments[i].size(); m++) {
+                        newList.add(segments[i].get(m));
+                    }
+                    if (j > i) {
+                        segments[j] = newList;
+                        segments[i] = new ArrayList<String>();
+                    } else {
+                        segments[i] = newList;
+                        segments[j] = new ArrayList<String>();
+                    }
+                } else if (segments[i].get(segments[i].size() - 1).equals(segments[j].get(0))) {
+                    ArrayList<String> newList = new ArrayList<String>();
+                    for (int m = 0; m < segments[i].size(); m++) {
+                        newList.add(segments[i].get(m));
+                    }
+                    for (int n = 1; n < segments[j].size(); n++) {
+                        newList.add(segments[j].get(n));
+                    }
+                    if (j > i) {
+                        segments[j] = newList;
+                        segments[i] = new ArrayList<String>();
+                    } else {
+                        segments[i] = newList;
+                        segments[j] = new ArrayList<String>();
+                    }
+                } else if (segments[i].get(segments[i].size() - 1).equals(segments[j].size() - 1)) {
+                    ArrayList<String> newList = new ArrayList<String>();
+                    for (int n = 0; n < segments[j].size(); n++) {
+                        newList.add(segments[j].get(n));
+                    }
+                    for (int m = segments[i].size() - 2; m >= 0; m--) {
+                        newList.add(segments[i].get(m));
+                    }
+                    if (j > i) {
+                        segments[j] = newList;
+                        segments[i] = new ArrayList<String>();
+                    } else {
+                        segments[i] = newList;
+                        segments[j] = new ArrayList<String>();
+                    }
+                }
+            }
+        }
+        for (int i = 0; i < segmentNumber; i++) {
+            if (segments[i].size() == 0) {
+                continue;
+            } else {
+                for (int j = 0; j < segments[i].size(); j++) {
+                    returnString += segments[i].get(j);
+                    if (j != segments[i].size() - 1) {
+                        returnString += "-";
+                    }
+                }
+            }
+            returnString += " ";
+        }
+        return returnString;
     }
 
     public static void sortSpot() {
@@ -278,7 +642,6 @@ public class Bootstrap {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-
             } else if (input.equals("6")) {
                 Resources.showPlaces();
             } else if (input.equals("7")) {

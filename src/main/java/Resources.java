@@ -14,6 +14,9 @@ public class Resources {
     private static String descriptionFileName = "document/spotsDescription.txt";
     private static int[][] distances;
     private static ArrayList<Description> descriptions = new ArrayList<Description>();
+    private static ArrayList<Vertex> vertexes = new ArrayList<Vertex>();
+    private static ArrayList<Point> points = new ArrayList<Point>();
+    public static String record = "";
 
     static {
         try {
@@ -53,6 +56,32 @@ public class Resources {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    static {
+        for (String place1: places) {
+            int count = 0;
+            for (String place2: places) {
+                if (place1.equals(place2)) {
+                    continue;
+                } else {
+                    if (getTwoPlaceDistance(place1, place2) < 32767) {
+                        count++;
+                    }
+                }
+            }
+            vertexes.add(new Vertex(place1, count));
+        }
+    }
+
+    static {
+        for (String place: places) {
+            points.add(new Point(place, 2));
+        }
+    }
+
+    public static ArrayList<Point> getPoints() {
+        return points;
     }
 
     private static boolean isExist(String name) {
@@ -111,6 +140,10 @@ public class Resources {
         return false;
     }
 
+    public static ArrayList<Vertex> getVertexes() {
+        return vertexes;
+    }
+
     public static void showPlaces() {
         for (String place: places) {
             System.out.print(place + "  ");
@@ -154,10 +187,17 @@ public class Resources {
     }
 
     public static void main(String[] args) {
-        printResult();
+        //printResult();
+        printVertexDegree();
     }
 
-    private static int getTwoPlaceDistance(String sourcePlace, String destinationPlace) {
+    public static void printVertexDegree() {
+        for (Vertex vertex: vertexes) {
+            System.out.println("景点名称->" + vertex.getSpotName() + "  与该景点相连的边数->" + vertex.getDegree());
+        }
+    }
+
+    public static int getTwoPlaceDistance(String sourcePlace, String destinationPlace) {
         if (sourcePlace.equals(destinationPlace)) {
             return 0;
         }
@@ -257,7 +297,6 @@ public class Resources {
                 //DistanceSpot tempDistanceSpot = currentDistanceSpot;
 
                 pplaces.add(nextSpot);
-
 
 
 //                System.out.println("allPlaces before remove size" + allPlaces.size());

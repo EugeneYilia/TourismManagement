@@ -1,4 +1,5 @@
 import java.io.*;
+import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -40,6 +41,8 @@ public class Bootstrap {
                 System.out.println("请输入第二个景点的名称");
                 String spot2 = scanner.nextLine();
                 Resources.getShortestDistance(spot1, spot2);
+            } else if (input.equals("5")) {
+                generateRoute();
             } else if (input.equals("6")) {
                 BufferedReader bufferedReader = null;
                 try {
@@ -62,6 +65,92 @@ public class Bootstrap {
                 return;
             }
         }
+    }
+
+    public static void generateRoute() {//生成最小哈密尔顿回路，求出所有的哈密尔顿回路并求出每个哈密尔顿回路的总路线长度
+        //在构建哈密尔顿回路过程中，一个点应该有且只有一个入边和出边
+        ArrayList<String> allPlaces = Resources.getDuplicatePlaces();
+        ArrayList<String> selectedPlaces = new ArrayList<String>();
+        ArrayList<Vertex> vertexes = Resources.getVertexes();
+        ArrayList<Point> allPoints = Resources.getPoints();
+        ArrayList<Point> existPoints = new ArrayList<Point>();
+        //System.out.println(vertexes.size());
+        for (Vertex vertex: vertexes) {
+            if (vertex.getDegree() == 2) {
+                System.out.println("度数为2的景点有" + vertex.getSpotName());
+                Resources.record += " " + vertex.getSpotName() + " ";
+                selectedPlaces.add(vertex.getSpotName());
+                allPlaces.remove(vertex.getSpotName());
+                Point removedPoint = null;
+                for (Point point: allPoints) {
+                    if (point.getSpotName().equals(vertex.getSpotName())) {
+                        removedPoint = point;
+                        break;
+                    }
+                }
+                allPoints.remove(removedPoint);
+                existPoints.add(removedPoint);
+                for (String place: Resources.getPlaces()) {
+                    if (place.equals(vertex.getSpotName())) {
+                        continue;
+                    }
+                    if (Resources.getTwoPlaceDistance(vertex.getSpotName(), place) < 32767) {
+                        if (Resources.record.contains(" " + vertex.getSpotName())) {
+                            if (!Resources.record.contains(place)) {
+                                Resources.record = Resources.record.replaceAll(" " + vertex.getSpotName(), " " + place + "-" + vertex.getSpotName());
+                            } else {
+
+                            }
+                        } else if (Resources.record.contains(vertex.getSpotName() + " ")) {
+                            if (!Resources.record.contains(place)) {
+                                Resources.record = Resources.record.replaceAll(vertex.getSpotName() + " ", vertex.getSpotName() + "-" + place + " ");
+                            } else {
+
+                            }
+                        }
+                        System.out.println("与" + vertex.getSpotName() + "相连的有" + place);
+                        boolean isExistInAllPlaces = false;
+                        for (String existPlace: allPlaces) {
+                            if (existPlace.equals(place)) {
+                                isExistInAllPlaces = true;
+                            }
+                        }
+                        if (isExistInAllPlaces) {
+                            allPlaces.remove(place);
+                        }
+
+                        boolean isExistInSelectedPlaces = false;
+                        for (String selectedPlace: selectedPlaces) {
+                            if (selectedPlace.equals(place)) {
+                                isExistInSelectedPlaces = true;
+                            }
+                        }
+                        if (!isExistInSelectedPlaces) {
+                            selectedPlaces.add(place);
+                            System.out.println(place + "被加入到选择集合中");
+                        } else {
+                            System.out.println(place + "已存在于选择集合中");
+                        }
+                    }
+                }
+            }
+        }
+        //System.out.println(selectedPlaces.size());
+
+        /*
+        System.out.println("已选择的集合中的景点");
+        for (String selectedPlace: selectedPlaces) {
+            System.out.print(selectedPlace + "        ");
+        }
+        System.out.println();
+
+        System.out.println("还未加入选择集合中的元素");
+        for (String leftPlace: allPlaces) {
+            System.out.print(leftPlace + "        ");
+        }
+        System.out.println();*/
+
+        System.out.println(Resources.record);
     }
 
     public static void sortSpot() {

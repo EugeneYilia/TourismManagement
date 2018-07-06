@@ -45,6 +45,9 @@ public class ParkingStack {
                 }
             }
             while (true) {
+                if (Parking.temporaryArea.getSize() == 0) {
+                    break;
+                }
                 addCar(Parking.temporaryArea.removeCar());
                 if (Parking.temporaryArea.getSize() == 0) {
                     break;

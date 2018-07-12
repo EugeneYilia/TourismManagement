@@ -1,2 +1,3 @@
 # TourismManagement
-A tourism management system.
+  A tourism management system.  
+  The new version is [WebVersion](https://github.com/EugeneYilia/TourismManagementSystem)
